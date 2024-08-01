@@ -1,5 +1,5 @@
 import re
-from collections import namedtuple
+from typing import Any, NamedTuple
 
 from ApplicationServices import (
     AXUIElementGetTypeID,
@@ -14,6 +14,28 @@ from ApplicationServices import (
     kAXValueCGSizeType,
 )
 from CoreFoundation import CFArrayGetTypeID, CFGetTypeID, CFStringGetTypeID
+
+
+class CGRect(NamedTuple):
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class CFRange(NamedTuple):
+    location: float
+    length: int
+
+
+class CGPoint(NamedTuple):
+    x: float
+    y: float
+
+
+class CGSize(NamedTuple):
+    width: float
+    height: float
 
 
 class Converter:
@@ -47,30 +69,34 @@ class Converter:
     def convert_app_ref(self, value):
         return self.app_ref_class(ref=value)
 
-    def convert_size(self, value):
+    @staticmethod
+    def convert_size(value) -> CGSize:
         repr_searched = re.search("{.*}", str(value)).group()
-        CGSize = namedtuple("CGSize", ["width", "height"])
+        # CGSize = namedtuple("CGSize", ["width", "height"])
         size = NSSizeFromString(repr_searched)
 
         return CGSize(size.width, size.height)
 
-    def convert_point(self, value):
+    @staticmethod
+    def convert_point(value) -> CGPoint:
         repr_searched = re.search("{.*}", str(value)).group()
-        CGPoint = namedtuple("CGPoint", ["x", "y"])
+        # CGPoint = namedtuple("CGPoint", ["x", "y"])
         point = NSPointFromString(repr_searched)
 
         return CGPoint(point.x, point.y)
 
-    def convert_range(self, value):
+    @staticmethod
+    def convert_range(value) -> CFRange:
         repr_searched = re.search("{.*}", str(value)).group()
-        CFRange = namedtuple("CFRange", ["location", "length"])
+        # CFRange = namedtuple("CFRange", ["location", "length"])
         range = NSRangeFromString(repr_searched)
 
         return CFRange(range.location, range.length)
 
-    def convert_rect(self, value):
+    @staticmethod
+    def convert_rect(value: Any) -> CGRect:
         repr_searched = re.search("{.*}", str(value)).group()
-        CGRect = namedtuple("CGRect", ["x", "y", "width", "height"])
+        # CGRect = namedtuple("CGRect", ["x", "y", "width", "height"])
         rect = NSRectFromString(repr_searched)
 
         return CGRect(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height)

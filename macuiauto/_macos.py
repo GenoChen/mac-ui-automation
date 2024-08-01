@@ -16,7 +16,7 @@ from ApplicationServices import (
     AXUIElementSetAttributeValue,
     AXUIElementSetMessagingTimeout,
 )
-from atomacos import errors
+from macuiauto import errors
 from objc import callbackFor
 
 PAXObserverCallback = callbackFor(AXObserverCreate)

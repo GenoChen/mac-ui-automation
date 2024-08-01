@@ -4,20 +4,17 @@ build-backend = "flit.buildapi"
 
 
 [tool.flit.metadata]
-module = "atomacos"
-author = "Davee Nguyen"
-author-email = "davee@daveenguyen.com"
-home-page = "https://github.com/daveenguyen/atomacos"
+module = "macuiauto"
+author = "Geno Chen"
+author-email = "geno.chenjiannan@gmail.com"
+home-page = "https://github.com/GenoChen/mac-ui-automation"
 requires = [
     "pyobjc-core>=3.0.4",
     "pyobjc-framework-Cocoa>=3.0.4",
     "pyobjc-framework-Quartz>=3.0.4",
     "pyobjc-framework-ApplicationServices>=3.0.4",
     "pyobjc-framework-CoreText>=3.0.4",
-    "pygetwindow<0.0.5",
-    "pyscreeze<0.1.20",
-    "pyautogui<0.9.42",
-    "future",
+    "pynput>=1.7.7",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -29,12 +26,11 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
     "Programming Language :: Objective C",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 2.7",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.4",
-    "Programming Language :: Python :: 3.5",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Quality Assurance",
@@ -42,22 +38,3 @@ classifiers = [
     "Topic :: Software Development :: User Interfaces",
 ]
 description-file="README.md"
-
-[tool.flit.metadata.requires-extra]
-dev = [
-    "black",
-    "pre-commit",
-    "tox",
-]
-test = [
-    "pytest",
-    "pytest-cov",
-]
-doc = ["sphinx", "m2r2"]
-
-[tool.isort]
-multi_line_output=3
-include_trailing_comma=true
-force_grid_wrap=0
-use_parentheses=true
-line_length=88

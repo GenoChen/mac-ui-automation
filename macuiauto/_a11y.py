@@ -8,8 +8,8 @@ from ApplicationServices import (
     AXUIElementCreateSystemWide,
     CFEqual,
 )
-from atomacos import _converter
-from atomacos._macos import (
+from macuiauto import _converter
+from macuiauto._macos import (
     PAXUIElementCopyActionNames,
     PAXUIElementCopyAttributeNames,
     PAXUIElementCopyAttributeValue,
@@ -20,7 +20,7 @@ from atomacos._macos import (
     PAXUIElementSetAttributeValue,
     PAXUIElementSetMessagingTimeout,
 )
-from atomacos.errors import (
+from macuiauto.errors import (
     AXError,
     AXErrorAPIDisabled,
     AXErrorCannotComplete,
@@ -32,6 +32,26 @@ from atomacos.errors import (
 from PyObjCTools import AppHelper
 
 logger = logging.getLogger(__name__)
+
+
+class RunningApplication(object):
+    def __init__(self, app_ref):
+        self.ref = app_ref
+
+    def process_identifier(self):
+        return self.ref.processIdentifier()
+
+    def terminate(self):
+        return self.ref.terminate()
+
+    def localized_name(self):
+        return self.ref.localizedName()
+
+    def bundle_identifier(self):
+        return self.ref.bundleIdentifier()
+
+    def activate_with_options(self, options: int):
+        return self.ref.activateWithOptions_(options)
 
 
 class AXUIElement(object):
@@ -66,12 +86,12 @@ class AXUIElement(object):
         return not self.__eq__(other)
 
     def __getattr__(self, item):
-        if item in self.ax_attributes:
+        if item in self._ax_attributes:
             return self._get_ax_attribute(item)
-        elif item in self.ax_actions:
+        elif item in self._ax_actions:
 
             def perform_ax_action():
-                self._perform_ax_actions(item)
+                self.perform_ax_action(item)
 
             return perform_ax_action
         else:
@@ -82,7 +102,7 @@ class AXUIElement(object):
     def __setattr__(self, key, value):
         if key.startswith("AX"):
             try:
-                if key in self.ax_attributes:
+                if key in self._ax_attributes:
                     self._set_ax_attribute(key, value)
             except AXErrorIllegalArgument:
                 pass
@@ -91,27 +111,27 @@ class AXUIElement(object):
 
     def __dir__(self):
         return (
-            self.ax_attributes
-            + self.ax_actions
+            self._ax_attributes
+            + self._ax_actions
             + list(self.__dict__.keys())
             + dir(super(AXUIElement, self))  # not working in python 2
         )
 
     @classmethod
-    def from_bundle_id(cls, bundle_id):
+    def _from_bundle_id(cls, bundle_id) -> 'AXUIElement':
         """
         Get the top level element for the application with the specified
         bundle ID, such as com.vmware.fusion.
         """
-        apps = _running_apps_with_bundle_id(bundle_id)
+        apps = running_apps_with_bundle_id(bundle_id)
         if not apps:
             raise ValueError(
                 "Specified bundle ID not found in " "running apps: %s" % bundle_id
             )
-        return cls.from_pid(apps[0].processIdentifier())
+        return cls._from_pid(apps[0].process_identifier())
 
     @classmethod
-    def from_localized_name(cls, name):
+    def _from_localized_name(cls, name) -> 'AXUIElement':
         """Get the top level element for the application with the specified
         localized name, such as VMware Fusion.
 
@@ -120,13 +140,13 @@ class AXUIElement(object):
         # Refresh the runningApplications list
         apps = get_running_apps()
         for app in apps:
-            if fnmatch.fnmatch(app.localizedName(), name):
-                pid = app.processIdentifier()
-                return cls.from_pid(pid)
+            if fnmatch.fnmatch(app.localized_name(), name):
+                pid = app.process_identifier()
+                return cls._from_pid(pid)
         raise ValueError("Specified application not found in running apps.")
 
     @classmethod
-    def from_pid(cls, pid):
+    def _from_pid(cls, pid: int) -> 'AXUIElement':
         """
         Creates an instance with the AXUIElementRef for the application with
         the specified process ID.
@@ -136,13 +156,13 @@ class AXUIElement(object):
         return cls(ref=app_ref)
 
     @classmethod
-    def frontmost(cls):
+    def _frontmost(cls) -> 'AXUIElement':
         """
         Creates an instance with the AXUIElementRef for the frontmost application.
         """
         for app in get_running_apps():
-            pid = app.processIdentifier()
-            ref = cls.from_pid(pid)
+            pid = app.process_identifier()
+            ref = cls._from_pid(pid)
             try:
                 if ref.AXFrontmost:
                     return ref
@@ -161,7 +181,7 @@ class AXUIElement(object):
         raise ValueError("No GUI application found.")
 
     @classmethod
-    def systemwide(cls):
+    def _systemwide(cls) -> 'AXUIElement':
         """
         Creates an instance with the AXUIElementRef for the system-wide
         accessibility object.
@@ -170,20 +190,20 @@ class AXUIElement(object):
         return cls(ref=app_ref)
 
     @classmethod
-    def with_window(cls):
+    def _with_window(cls) -> 'AXUIElement':
         """
         Creates an instance with the AXUIElementRef for a random application
         that has windows.
         """
         for app in get_running_apps():
-            pid = app.processIdentifier()
-            ref = cls.from_pid(pid)
+            pid = app.process_identifier()
+            ref = cls._from_pid(pid)
             if hasattr(ref, "windows") and len(ref.windows()) > 0:
                 return ref
         raise ValueError("No GUI application found.")
 
     @property
-    def ax_actions(self):
+    def _ax_actions(self) -> list[str]:
         """Gets the list of actions available on the AXUIElement"""
         try:
             names = PAXUIElementCopyActionNames(self.ref)
@@ -192,7 +212,7 @@ class AXUIElement(object):
             return []
 
     @property
-    def ax_attributes(self):
+    def _ax_attributes(self) -> list[str]:
         """Gets the list of attributes available on the AXUIElement"""
         try:
             names = PAXUIElementCopyAttributeNames(self.ref)
@@ -201,33 +221,32 @@ class AXUIElement(object):
             return []
 
     @property
-    def bundle_id(self):
+    def bundle_id(self) -> str:
         """Gets the AXUIElement's bundle identifier"""
-        return self._running_app.bundleIdentifier()
+        return self._running_app.bundle_identifier()
 
     @property
-    def pid(self):
+    def pid(self) -> int:
         """Gets the AXUIElement's process ID"""
         pid = PAXUIElementGetPid(self.ref)
         return pid
 
     @property
-    def _running_app(self):
+    def _running_app(self) -> RunningApplication:
         ra = AppKit.NSRunningApplication
         app = ra.runningApplicationWithProcessIdentifier_(self.pid)
-        return app
+        return RunningApplication(app)
 
-    def get_element_at_position(self, x, y):
+    def _get_element_at_position(self, coord: tuple) -> 'AXUIElement':
         if self.ref is None:
             raise AXErrorUnsupported(
                 "Operation not supported on null element references"
             )
-
-        element = PAXUIElementCopyElementAtPosition(self.ref, x, y)
+        element = PAXUIElementCopyElementAtPosition(self.ref, float(coord[0]), float(coord[1]))
 
         return self.__class__(element)
 
-    def set_timeout(self, timeout):
+    def _set_timeout(self, timeout):
         """
         Sets the timeout value used in the accessibility API
 
@@ -241,11 +260,11 @@ class AXUIElement(object):
         # NSApplicationActivateAllWindows | NSApplicationActivateIgnoringOtherApps
         # == 3 - PyObjC in 10.6 does not expose these constants though so I have
         # to use the int instead of the symbolic names
-        self._running_app.activateWithOptions_(3)
+        self._running_app.activate_with_options(3)
 
-    def _get_ax_attribute(self, item):
+    def _get_ax_attribute(self, item: str) -> any:
         """Gets the value of the the specified attribute"""
-        if item in self.ax_attributes:
+        if item in self._ax_attributes:
             try:
                 attr_value = PAXUIElementCopyAttributeValue(self.ref, item)
                 return self.converter.convert_value(attr_value)
@@ -256,7 +275,7 @@ class AXUIElement(object):
 
         raise AttributeError("'%s' object has no attribute '%s'" % (type(self), item))
 
-    def _set_ax_attribute(self, name, value):
+    def _set_ax_attribute(self, name: str, value: any):
         """Sets the specified attribute to the specified value"""
         settable = PAXUIElementIsAttributeSettable(self.ref, name)
 
@@ -265,34 +284,37 @@ class AXUIElement(object):
 
         PAXUIElementSetAttributeValue(self.ref, name, value)
 
-    def _perform_ax_actions(self, name):
+    def perform_ax_action(self, name: str):
         """Performs specified action on the AXUIElementRef"""
         PAXUIElementPerformAction(self.ref, name)
 
 
-def axenabled():
+def axenabled() -> bool:
     """Return the status of accessibility on the system"""
     return AXIsProcessTrusted()
 
 
-def get_frontmost_pid():
+def get_frontmost_pid() -> int:
     """Return the process ID of the application in the foreground"""
     frontmost_app = AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
-    pid = frontmost_app.processIdentifier()
+    pid = frontmost_app.process_identifier()
     return pid
 
 
-def get_running_apps():
+def get_running_apps() -> list['RunningApplication']:
     """Get a list of the running applications"""
     AppHelper.callLater(1, AppHelper.stopEventLoop)
     AppHelper.runConsoleEventLoop()
     # Get a list of running applications
     ws = AppKit.NSWorkspace.sharedWorkspace()
     apps = ws.runningApplications()
-    return apps
+    app_list = []
+    for app in apps:
+        app_list.append(RunningApplication(app))
+    return app_list
 
 
-def launch_app_by_bundle_id(bundle_id):
+def launch_app_by_bundle_id(bundle_id: str):
     # NSWorkspaceLaunchAllowingClassicStartup does nothing on any
     # modern system that doesn't have the classic environment installed.
     # Encountered a bug when passing 0 for no options on 10.6 PyObjC.
@@ -310,7 +332,7 @@ def launch_app_by_bundle_id(bundle_id):
         raise RuntimeError("Error launching specified application. %s" % str(r))
 
 
-def launch_app_by_bundle_path(bundle_path, arguments=None):
+def launch_app_by_bundle_path(bundle_path: str, arguments=None):
     if arguments is None:
         arguments = []
 
@@ -323,8 +345,8 @@ def launch_app_by_bundle_path(bundle_path, arguments=None):
     )
 
 
-def terminate_app_by_bundle_id(bundle_id):
-    apps = _running_apps_with_bundle_id(bundle_id)
+def terminate_app_by_bundle_id(bundle_id: str):
+    apps = running_apps_with_bundle_id(bundle_id)
 
     if not apps:
         return False
@@ -332,11 +354,24 @@ def terminate_app_by_bundle_id(bundle_id):
     return apps[0].terminate()
 
 
-def _running_apps_with_bundle_id(bundle_id):
+def terminate_app_by_pid(pid: int):
+    apps = get_running_apps()
+
+    for app in apps:
+        if pid == app.process_identifier():
+            return app.terminate()
+    return False
+
+
+def running_apps_with_bundle_id(bundle_id: str) -> list['RunningApplication']:
     """
     Returns an array of NSRunningApplications, or an empty array if
     no applications match the bundle identifier.
     """
     ra = AppKit.NSRunningApplication
-    app_list = ra.runningApplicationsWithBundleIdentifier_(bundle_id)
+    apps = ra.runningApplicationsWithBundleIdentifier_(bundle_id)
+    app_list = []
+    for app in apps:
+        app_list.append(RunningApplication(app))
     return app_list
+

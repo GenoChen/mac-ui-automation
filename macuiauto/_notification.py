@@ -4,7 +4,7 @@ import threading
 import time
 
 from ApplicationServices import AXObserverGetRunLoopSource, NSDefaultRunLoopMode
-from atomacos._macos import (
+from macuiauto._macos import (
     PAXObserverAddNotification,
     PAXObserverCallback,
     PAXObserverCreate,

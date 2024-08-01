@@ -1,9 +1,10 @@
-from atomacos import AXCallbacks
-from atomacos._notification import Observer
+from macuiauto import AXCallbacks
+from macuiauto._notification import Observer
 
 
 class WaitForMixin(object):
-    def waitFor(self, timeout, notification, **kwargs):
+
+    def wait_for(self, timeout, notification, **kwargs):
         """Generic wait for a UI event that matches the specified
         criteria to occur.
 
@@ -21,22 +22,22 @@ class WaitForMixin(object):
             timeout=timeout,
         )
 
-    def waitForCreation(self, timeout=10, notification="AXCreated"):
+    def wait_for_creation(self, timeout=10, notification="AXCreated"):
         """Convenience method to wait for creation of some UI element.
 
         Returns: The element created
         """
-        return self.waitFor(timeout, notification)
+        return self.wait_for(timeout, notification)
 
-    def waitForWindowToAppear(self, winName, timeout=10):
+    def wait_for_window_to_appear(self, win_name, timeout=10):
         """Convenience method to wait for a window with the given name to
         appear.
 
         Returns: Boolean
         """
-        return self.waitFor(timeout, "AXWindowCreated", AXTitle=winName)
+        return self.wait_for(timeout, "AXWindowCreated", AXTitle=win_name)
 
-    def waitForWindowToDisappear(self, winName, timeout=10):
+    def wait_for_window_to_disappear(self, win_name, timeout=10):
         """Convenience method to wait for a window with the given name to
         disappear.
 
@@ -44,19 +45,18 @@ class WaitForMixin(object):
         """
         # For some reason for the AXUIElementDestroyed notification to fire,
         # we need to have a reference to it first
-        win = self.findFirst(AXRole="AXWindow", AXTitle=winName)  # noqa: F841
-        return self.waitFor(
-            timeout, "AXUIElementDestroyed", AXRole="AXWindow", AXTitle=winName
+        return self.wait_for(
+            timeout, "AXUIElementDestroyed", AXRole="AXWindow", AXTitle=win_name
         )
 
-    def waitForSheetToAppear(self, timeout=10):
+    def wait_for_sheet_to_appear(self, timeout=10):
         """Convenience method to wait for a sheet to appear.
 
         Returns: the sheet that appeared (element) or None
         """
-        return self.waitForCreation(timeout, "AXSheetCreated")
+        return self.wait_for_creation(timeout, "AXSheetCreated")
 
-    def waitForValueToChange(self, timeout=10):
+    def wait_for_value_to_change(self, timeout=10):
         """Convenience method to wait for value attribute of given element to
         change.
 
@@ -70,33 +70,33 @@ class WaitForMixin(object):
         # object's.  Unique identifiers considered include role and position
         # This seems to work best if you set the notification at the application
         # level
-        return self.waitFor(timeout, "AXValueChanged")
+        return self.wait_for(timeout, "AXValueChanged")
 
-    def waitForFocusToChange(self, newFocusedElem, timeout=10):
+    def wait_for_focus_to_change(self, new_focused_element, timeout=10):
         """Convenience method to wait for focused element to change (to new
         element given).
 
         Returns: Boolean
         """
-        return self.waitFor(
+        return self.wait_for(
             timeout,
             "AXFocusedUIElementChanged",
-            AXRole=newFocusedElem.AXRole,
-            AXPosition=newFocusedElem.AXPosition,
+            AXRole=new_focused_element.AXRole,
+            AXPosition=new_focused_element.AXPosition,
         )
 
-    def waitForFocusedWindowToChange(self, nextWinName, timeout=10):
+    def wait_for_focused_window_to_change(self, next_win_name, timeout=10):
         """Convenience method to wait for focused window to change
 
         Returns: Boolean
         """
-        return self.waitFor(timeout, "AXFocusedWindowChanged", AXTitle=nextWinName)
+        return self.wait_for(timeout, "AXFocusedWindowChanged", AXTitle=next_win_name)
 
-    def waitForFocusToMatchCriteria(self, timeout=10, **kwargs):
+    def wait_for_focus_to_match_criteria(self, timeout=10, **kwargs):
         """Convenience method to wait for focused element to change
         (to element matching kwargs criteria).
 
         Returns: Element or None
 
         """
-        return self.waitFor(timeout, "AXFocusedUIElementChanged", **kwargs)
+        return self.wait_for(timeout, "AXFocusedUIElementChanged", **kwargs)
