@@ -2,6 +2,7 @@ from pynput.mouse import Button
 from pynput.keyboard import Key
 from pynput import mouse
 from pynput import keyboard
+from typing import Union
 
 
 class Mouse(object):
@@ -108,7 +109,7 @@ class Mouse(object):
 class Keyboard(object):
     keyboard = keyboard.Controller()
 
-    def send_key(self, keychr: str | Key):
+    def send_key(self, keychr: Union[str, Key]):
         """Send one character with no modifiers."""
         self.keyboard.press(keychr)
         self.keyboard.release(keychr)
